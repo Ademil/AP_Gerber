@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Viga Gerber • Dente Inferior • NBR 6118:2023</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #f2f4f8;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 950px;
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            padding: 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0b2b4a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid #e9edf4;
+            padding-bottom: 16px;
+        }
+        h1 span {
+            background: #0f3b5c;
+            color: white;
+            font-size: 0.85rem;
+            padding: 4px 12px;
+            border-radius: 30px;
+        }
+        .card {
+            background: #f8fafd;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #eef2f7;
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .field {
+            flex: 1 1 140px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #3b4b62;
+        }
+        input, select {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid #dce2eb;
+            background: white;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #0b2b4a;
+            outline: none;
+            width: 100%;
+        }
+        input:focus, select:focus {
+            border-color: #0f3b5c;
+            box-shadow: 0 0 0 3px rgba(15,59,92,0.1);
+        }
+        button {
+            background: #0f3b5c;
+            color: white;
+            border: none;
+            border-radius: 18px;
+            padding: 15px 24px;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            box-shadow: 0 8px 18px rgba(15,59,92,0.25);
+            width: 100%;
+        }
+        button:hover { background: #123f5e; }
+        button:active { transform: scale(0.98); }
+        .results {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e3e9f2;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .results.active { display: flex; }
+        canvas {
+            background: #f9fafc;
+            border-radius: 20px;
+            border: 1px solid #dce2eb;
+            width: 100%;
+            height: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            text-align: left;
+            background: #eef3fa;
+            padding: 8px;
+            border-radius: 8px 8px 0 0;
+            color: #0b2b4a;
+            font-weight: 700;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #e9eff6;
+        }
+        .highlight { font-weight: 700; color: #0f3b5c; }
+        .execution-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .execution-list li {
+            background: #f8fafd;
+            border-radius: 16px;
+            padding: 14px 18px;
+            border-left: 4px solid #0f3b5c;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #1e2f40;
+        }
+        .execution-list li strong {
+            color: #0b2b4a;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .limit-ok { color: #0a6e2e; font-weight: 600; }
+        .limit-fail { color: #b22222; font-weight: 600; }
+        .note { font-size: 0.8rem; color: #5c6b7e; margin-top: 8px; }
+        .beta-table { font-size: 0.75rem; width: auto; margin-top: 8px; }
+        .beta-table td { padding: 4px 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📐 Viga Gerber (Dente Inferior)
+        <span>NBR 6118:2023</span>
+    </h1>
+
+    <div class="card">
+        <div class="input-group">
+            <div class="field">
+                <label>Vão livre L (m)</label>
+                <input type="number" id="span" value="5.0" step="0.1" min="2.0">
+            </div>
+            <div class="field">
+                <label>Base bw (cm)</label>
+                <input type="number" id="bw" value="20" step="1" min="12">
+            </div>
+            <div class="field">
+                <label>Altura h (cm)</label>
+                <input type="number" id="h" value="50" step="1" min="30">
+            </div>
+            <div class="field">
+                <label>fck (MPa)</label>
+                <select id="fck">
+                    <option value="25">C25</option>
+                    <option value="30" selected>C30</option>
+                    <option value="35">C35</option>
+                    <option value="40">C40</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="field">
+                <label>Carga permanente g (kN/m)</label>
+                <input type="number" id="gload" value="5.5" step="0.1">
+            </div>
+            <div class="field">
+                <label>Carga acidental q (kN/m)</label>
+                <input type="number" id="qload" value="5.0" step="0.1">
+            </div>
+            <div class="field">
+                <label>Cobrimento (cm)</label>
+                <input type="number" id="cover" value="3.0" step="0.1" min="2.0">
+            </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="field">
+                <label>Altura do dente (cm)</label>
+                <input type="number" id="dentHeight" value="12" step="1" min="5" max="30">
+            </div>
+            <div class="field">
+                <label>Comprimento do dente (cm)</label>
+                <input type="number" id="dentLength" value="20" step="1" min="10" max="40">
+            </div>
+            <div class="field">
+                <label>Agregado graúdo (mm)</label>
+                <select id="dmax">
+                    <option value="19" selected>Brita 1 (19 mm)</option>
+                    <option value="25">Brita 2 (25 mm)</option>
+                    <option value="12.5">Brita 0 (12.5 mm)</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="field">
+                <label>Tipologia da viga</label>
+                <select id="beamType">
+                    <option value="simply" selected>Biapoiada</option>
+                    <option value="cantilever">Em balanço</option>
+                    <option value="continuous">Contínua (mom. negativo)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Tipo de carregamento</label>
+                <select id="loadType">
+                    <option value="uniform" selected>Distribuído uniforme</option>
+                    <option value="concentrated">Concentrado no meio do vão</option>
+                </select>
+            </div>
+        </div>
+        <button id="calculateBtn">
+            <span>🔍</span> Calcular e Exibir Relatório
+        </button>
+        <div class="note">ⓘ Verifica espaçamento mínimo e redistribui barras se necessário.</div>
+    </div>
+
+    <div id="resultPanel" class="results">
+        <h3>📐 Representação Gráfica</h3>
+        <canvas id="beamCanvas" width="800" height="460"></canvas>
+        <div>
+            <h3>📋 Dimensionamento</h3>
+            <table id="designTable"></table>
+        </div>
+        <div>
+            <h3>📏 Flecha (ELS-DEF)</h3>
+            <table id="deflectionTable"></table>
+        </div>
+        <div>
+            <h3>⚖️ Estabilidade Lateral (Item 15.10)</h3>
+            <table id="stabilityTable"></table>
+            <details style="margin-top: 10px;">
+                <summary style="cursor:pointer; font-weight:600;">📊 Tabela 15.1 – Coeficiente β<sub>fl</sub></summary>
+                <table class="beta-table" style="margin-top:8px;">
+                    <tr><th>ℓ₀/h</th><th>Carga uniforme</th><th>Carga concentrada</th></tr>
+                    <tr><td>5</td><td>0,10</td><td>0,18</td></tr>
+                    <tr><td>10</td><td>0,20</td><td>0,35</td></tr>
+                    <tr><td>15</td><td>0,30</td><td>0,52</td></tr>
+                    <tr><td>20</td><td>0,40</td><td>0,70</td></tr>
+                    <tr><td>25</td><td>0,50</td><td>0,87</td></tr>
+                    <tr><td>30</td><td>0,60</td><td>1,04</td></tr>
+                    <tr><td>35</td><td>0,70</td><td>1,22</td></tr>
+                    <tr><td>40</td><td>0,80</td><td>1,39</td></tr>
+                </table>
+            </details>
+        </div>
+        <div>
+            <h3>🧾 Quantitativo de Materiais (1 viga)</h3>
+            <table id="materialTable"></table>
+        </div>
+        <div>
+            <h3>📝 Detalhes para Execução</h3>
+            <ul class="execution-list" id="executionList"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tabela 15.1 NBR 6118:2023
+    const table15_1 = {
+        uniform: [
+            { l0h: 5, beta: 0.10 }, { l0h: 10, beta: 0.20 }, { l0h: 15, beta: 0.30 },
+            { l0h: 20, beta: 0.40 }, { l0h: 25, beta: 0.50 }, { l0h: 30, beta: 0.60 },
+            { l0h: 35, beta: 0.70 }, { l0h: 40, beta: 0.80 }
+        ],
+        concentrated: [
+            { l0h: 5, beta: 0.18 }, { l0h: 10, beta: 0.35 }, { l0h: 15, beta: 0.52 },
+            { l0h: 20, beta: 0.70 }, { l0h: 25, beta: 0.87 }, { l0h: 30, beta: 1.04 },
+            { l0h: 35, beta: 1.22 }, { l0h: 40, beta: 1.39 }
+        ]
+    };
+
+    function interpolateBeta(l0h, type) {
+        const data = table15_1[type];
+        if (l0h <= data[0].l0h) return data[0].beta;
+        if (l0h >= data[data.length-1].l0h) return data[data.length-1].beta;
+        for (let i = 0; i < data.length - 1; i++) {
+            if (l0h >= data[i].l0h && l0h <= data[i+1].l0h) {
+                const t = (l0h - data[i].l0h) / (data[i+1].l0h - data[i].l0h);
+                return data[i].beta + t * (data[i+1].beta - data[i].beta);
+            }
+        }
+        return data[data.length-1].beta;
+    }
+
+    // Verificação de espaçamento e distribuição em camadas (NBR 6118 item 18.3.2.2)
+    function getBarArrangement(totalBars, barDiamCm, bw, cover, stirrupDiamCm, dmaxMm) {
+        const dmaxCm = dmaxMm / 10;
+        const ahMin = Math.max(2.3, barDiamCm, 1.2 * dmaxCm); // em cm (considerando brita 1 com 19mm -> 2.28 ≈ 2.3)
+        const avMin = Math.max(2.0, barDiamCm, 0.5 * ahMin);
+        const usefulWidth = bw - 2 * cover - 2 * stirrupDiamCm;
+        const maxBarsPerLayer = Math.floor((usefulWidth + ahMin) / (barDiamCm + ahMin));
+        if (maxBarsPerLayer <= 0) return { layers: [], desc: "Largura insuficiente", maxPerLayer: 0 };
+        let remaining = totalBars;
+        const layers = [];
+        while (remaining > 0) {
+            const barsInLayer = Math.min(remaining, maxBarsPerLayer);
+            layers.push(barsInLayer);
+            remaining -= barsInLayer;
+        }
+        let desc = `${totalBars} Ø ${(barDiamCm*10).toFixed(1)} mm`;
+        if (layers.length === 1) {
+            desc += ` (1ª camada)`;
+        } else {
+            const layerCounts = layers.join('+');
+            desc += ` (${layerCounts} nas camadas)`;
+        }
+        return { layers, desc, maxPerLayer: maxBarsPerLayer, ahMin, avMin };
+    }
+
+    function drawBeam(L, bw, h, pTotal, Md, barDesc, cover, layers, barDiamCm, dentH, dentL) {
+        const canvas = document.getElementById('beamCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const W = canvas.width, H = canvas.height;
+        const left = 100, right = 90, top = 60;
+        const drawWidth = W - left - right;
+        const totalLength = L + 0.4 + dentL/100;
+        const scaleX = drawWidth / totalLength;
+
+        const xDenteInicio = left;
+        const xDenteFim = xDenteInicio + (dentL/100) * scaleX;
+        const xApoioDir = xDenteFim + L * scaleX;
+
+        const beamHeightPx = Math.min(h * 1.2, 100);
+        const yBeamTop = top + 80;
+        const yBeamBottom = yBeamTop + beamHeightPx;
+        const dentHeightPx = (dentH / h) * beamHeightPx;
+
+        // Consolo
+        const consoloX = xDenteInicio + (dentL/100)*scaleX * 0.5;
+        const consoloTop = yBeamBottom - dentHeightPx;
+        ctx.fillStyle = '#95a5a6';
+        ctx.fillRect(consoloX - 15, consoloTop, 30, yBeamBottom - consoloTop + 20);
+        ctx.fillRect(consoloX - 18, yBeamBottom + 20, 36, 8);
+
+        // Viga com dente inferior
+        ctx.fillStyle = '#d9e2f0';
+        ctx.strokeStyle = '#0f3b5c';
+        ctx.lineWidth = 2;
+        ctx.fillRect(xDenteInicio, yBeamTop, xDenteFim - xDenteInicio, beamHeightPx - dentHeightPx);
+        ctx.strokeRect(xDenteInicio, yBeamTop, xDenteFim - xDenteInicio, beamHeightPx - dentHeightPx);
+        ctx.fillRect(xDenteFim, yBeamTop, xApoioDir - xDenteFim, beamHeightPx);
+        ctx.strokeRect(xDenteFim, yBeamTop, xApoioDir - xDenteFim, beamHeightPx);
+
+        // Neoprene
+        ctx.fillStyle = '#e67e22';
+        const neopreneY = yBeamBottom - dentHeightPx - 3;
+        ctx.fillRect(xDenteInicio + 5, neopreneY, (dentL/100)*scaleX - 10, 5);
+        ctx.fillStyle = '#0b2b4a';
+        ctx.font = '9px Segoe UI';
+        ctx.fillText('neoprene', xDenteInicio + 8, neopreneY - 2);
+
+        // Apoio direito
+        ctx.fillStyle = '#7f8c9a';
+        ctx.beginPath();
+        ctx.moveTo(xApoioDir - 12, yBeamBottom);
+        ctx.lineTo(xApoioDir + 12, yBeamBottom);
+        ctx.lineTo(xApoioDir, yBeamBottom + 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(xApoioDir - 14, yBeamBottom + 18, 28, 6);
+
+        // Carga
+        ctx.fillStyle = '#c0392b';
+        ctx.strokeStyle = '#c0392b';
+        ctx.lineWidth = 1.5;
+        const numArrows = 8;
+        const arrowSpacing = (L * scaleX) / (numArrows + 1);
+        for (let i = 1; i <= numArrows; i++) {
+            const x = xDenteFim + i * arrowSpacing;
+            ctx.beginPath();
+            ctx.moveTo(x, yBeamTop - 25);
+            ctx.lineTo(x, yBeamTop - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 4, yBeamTop - 12);
+            ctx.lineTo(x, yBeamTop - 2);
+            ctx.lineTo(x + 4, yBeamTop - 12);
+            ctx.fill();
+        }
+        ctx.fillStyle = '#0f3b5c';
+        ctx.font = 'bold 13px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(`p = ${pTotal.toFixed(1)} kN/m`, xDenteFim + (L*scaleX)/2, yBeamTop - 30);
+
+        // Diagrama momento
+        const refY = yBeamBottom + 50;
+        const momentScale = 90 / Md;
+        ctx.strokeStyle = '#2980b9';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xDenteFim, refY);
+        for (let i = 0; i <= 100; i++) {
+            const xi = xDenteFim + (i/100)*(L*scaleX);
+            const relPos = i/100;
+            const Mx = 4 * Md * relPos * (1-relPos);
+            const yi = refY + Mx * momentScale;
+            ctx.lineTo(xi, yi);
+        }
+        ctx.stroke();
+        ctx.lineTo(xApoioDir, refY);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(41, 128, 185, 0.2)';
+        ctx.fill();
+        ctx.setLineDash([4,4]);
+        ctx.strokeStyle = '#7f8c8d';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xDenteFim, refY);
+        ctx.lineTo(xApoioDir, refY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#0f3b5c';
+        ctx.font = 'bold 12px Segoe UI';
+        const xMid = xDenteFim + (L*scaleX)/2;
+        const yMid = refY + Md * momentScale;
+        ctx.fillText(`Md = ${Md.toFixed(1)} kN.m`, xMid, yMid + 18);
+
+        // Seção transversal com camadas
+        const secX = W - 170, secY = 15, secScale = 1.5;
+        const secW = bw * secScale, secH = h * secScale;
+        ctx.fillStyle = '#eef2f7';
+        ctx.strokeStyle = '#0f3b5c';
+        ctx.fillRect(secX, secY, secW, secH);
+        ctx.strokeRect(secX, secY, secW, secH);
+
+        const coverPx = cover * secScale;
+        const barRadius = Math.max(2.5, barDiamCm * secScale * 0.4);
+        const vertSpacing = Math.max(2.0, barDiamCm) * secScale * 1.2;
+
+        let currentY = secY + secH - coverPx - barRadius - 1;
+        ctx.fillStyle = '#c0392b';
+        for (let i = 0; i < layers.length; i++) {
+            const nBars = layers[i];
+            const spacing = nBars > 1 ? (secW - 2 * coverPx - 2 * 0.63 * secScale) / (nBars - 1) : 0;
+            for (let j = 0; j < nBars; j++) {
+                const x = secX + coverPx + 0.63 * secScale + j * spacing;
+                ctx.beginPath();
+                ctx.arc(x, currentY, barRadius, 0, Math.PI*2);
+                ctx.fill();
+            }
+            currentY -= vertSpacing;
+        }
+
+        // Barras superiores (2)
+        const topBarY = secY + coverPx + barRadius + 1;
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.arc(secX + secW/3, topBarY, barRadius, 0, Math.PI*2);
+        ctx.arc(secX + 2*secW/3, topBarY, barRadius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#7f8c9a';
+        ctx.strokeRect(secX+4, secY+4, secW-8, secH-8);
+        ctx.fillStyle = '#0f3b5c';
+        ctx.font = 'bold 11px Segoe UI';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${bw}x${h} cm`, secX, secY-5);
+        ctx.fillText(barDesc, secX, secY+secH+15);
+    }
+
+    function updateResults() {
+        const L = parseFloat(document.getElementById('span').value) || 5.0;
+        const bw = parseFloat(document.getElementById('bw').value) || 20;
+        const h = parseFloat(document.getElementById('h').value) || 50;
+        const fck = parseInt(document.getElementById('fck').value) || 30;
+        const g = parseFloat(document.getElementById('gload').value) || 5.5;
+        const q = parseFloat(document.getElementById('qload').value) || 5.0;
+        const cover = parseFloat(document.getElementById('cover').value) || 3.0;
+        const dentH = parseFloat(document.getElementById('dentHeight').value) || 12;
+        const dentL = parseFloat(document.getElementById('dentLength').value) || 20;
+        const dmax = parseFloat(document.getElementById('dmax').value) || 19;
+        const pTotal = g + q;
+        const beamType = document.getElementById('beamType').value;
+        const loadType = document.getElementById('loadType').value;
+
+        let l0;
+        if (beamType === 'simply') l0 = L;
+        else if (beamType === 'cantilever') l0 = 2 * L;
+        else l0 = 0.7 * L;
+        const l0_cm = l0 * 100;
+        const l0h = l0_cm / h;
+
+        const gammaC = 1.4, gammaS = 1.15;
+        const fcd = fck/10/gammaC;
+        const fyd = 50/gammaS;
+        const d = Math.max(h - cover - 0.5 - 0.8, h - cover - 1.5);
+        const pd = 1.4 * pTotal;
+        const Md = (pd * L * L) / 8;
+        const Vsd = (pd * L) / 2;
+
+        const KMD = (Md*100) / (bw * d * d * fcd);
+        const KMDlim = 0.251;
+        let As_cm2 = 0;
+        if (KMD <= KMDlim) {
+            const KZ = (1 + Math.sqrt(1 - 2*KMD/0.85))/2;
+            As_cm2 = (Md*100) / (KZ * d * fyd);
+        }
+        const AsMin = (0.15/100) * bw * h;
+        const AsFinal = Math.max(As_cm2, AsMin);
+
+        let barQty = 0, barDiameterMm = 0;
+        if (AsFinal <= 2.5) { barQty = 3; barDiameterMm = 10.0; }
+        else if (AsFinal <= 3.7) { barQty = 3; barDiameterMm = 12.5; }
+        else if (AsFinal <= 5.0) { barQty = 4; barDiameterMm = 12.5; }
+        else { barQty = 4; barDiameterMm = 16.0; }
+
+        const barDiamCm = barDiameterMm / 10;
+        const stirrupDiamCm = 0.63; // 6.3 mm
+
+        const arrangement = getBarArrangement(barQty, barDiamCm, bw, cover, stirrupDiamCm, dmax);
+        const barDesc = arrangement.desc;
+        const layers = arrangement.layers;
+
+        const fctm = 0.3*Math.pow(fck,2/3);
+        const fctd = (0.7 * fctm) / 10 / gammaC;
+        const Vc = 0.6 * fctd * bw * d;
+        const stirrupText = Vsd <= Vc ? "Armadura mínima: Ø 6.3 c/ 15 cm" : "Ø 6.3 c/ 12 cm (calculado)";
+        const topBars = "2 Ø 10.0 mm";
+        const beamLength = L + 0.4 + dentL/100;
+        const linearMass = diam => diam===10?0.617:diam===12.5?0.963:diam===16?1.578:0.888;
+        const longSteelKg = barQty * beamLength * linearMass(barDiameterMm);
+        const topSteelKg = 2 * beamLength * 0.617;
+        const stirrupQty = Math.ceil(beamLength/0.15)+1;
+        const stirrupKg = stirrupQty * (2*(h-2*cover)+2*(bw-2*cover)+20)/100 * 0.245;
+        const concreteVolume = beamLength * (bw/100) * (h/100);
+        const formworkArea = (beamLength * (bw/100)) + (2 * beamLength * (h/100));
+
+        // Flecha
+        const psi2 = 0.3;
+        const Ecs = 0.85*5600*Math.sqrt(fck)*0.1;
+        const Ic = (bw*Math.pow(h,3))/12;
+        const Mr = (1.5 * 0.3*Math.pow(fck,2/3)*0.1 * Ic) / (h/2);
+        const p_quasi = g + psi2*q;
+        const M_servico = (p_quasi * L * L)/8 * 100;
+        let I_eq = Ic;
+        if (M_servico > Mr) {
+            const n = 2100/Ecs;
+            const As = AsFinal;
+            const a=bw/2, b=n*As, c=-n*As*d;
+            const xII = (-b + Math.sqrt(b*b-4*a*c))/(2*a);
+            const I_II = (bw*Math.pow(xII,3))/3 + n*As*Math.pow(d-xII,2);
+            I_eq = Math.pow(Mr/M_servico,3)*Ic + (1-Math.pow(Mr/M_servico,3))*I_II;
+        }
+        const f_imediata = (5/384)*((p_quasi*0.01)*Math.pow(L*100,4))/(Ecs*I_eq);
+        const alpha_f = 2.0/(1+0);
+        const f_diferida = f_imediata * alpha_f;
+        const f_total = f_imediata + f_diferida;
+
+        const p_total_servico = pTotal;
+        const M_servico_total = (p_total_servico * L * L)/8 * 100;
+        let I_eq_total = Ic;
+        if (M_servico_total > Mr) {
+            const n = 2100/Ecs;
+            const As = AsFinal;
+            const a=bw/2, b=n*As, c=-n*As*d;
+            const xII = (-b + Math.sqrt(b*b-4*a*c))/(2*a);
+            const I_II = (bw*Math.pow(xII,3))/3 + n*As*Math.pow(d-xII,2);
+            I_eq_total = Math.pow(Mr/M_servico_total,3)*Ic + (1-Math.pow(Mr/M_servico_total,3))*I_II;
+        }
+        const f_total_carga = (5/384)*((p_total_servico*0.01)*Math.pow(L*100,4))/(Ecs*I_eq_total);
+
+        const p_acidental = q;
+        const M_servico_acc = (p_acidental * L * L)/8 * 100;
+        let I_eq_acc = Ic;
+        if (M_servico_acc > Mr) {
+            const n = 2100/Ecs;
+            const As = AsFinal;
+            const a=bw/2, b=n*As, c=-n*As*d;
+            const xII = (-b + Math.sqrt(b*b-4*a*c))/(2*a);
+            const I_II = (bw*Math.pow(xII,3))/3 + n*As*Math.pow(d-xII,2);
+            I_eq_acc = Math.pow(Mr/M_servico_acc,3)*Ic + (1-Math.pow(Mr/M_servico_acc,3))*I_II;
+        }
+        const f_acidental = (5/384)*((p_acidental*0.01)*Math.pow(L*100,4))/(Ecs*I_eq_acc);
+
+        const limite_total = L*100/250;
+        const limite_acidental = L*100/350;
+
+        const beta_fl = interpolateBeta(l0h, loadType);
+        const cond1 = bw >= l0_cm/50;
+        const cond2 = bw >= beta_fl * h;
+        const estabilidade_ok = cond1 && cond2;
+
+        document.getElementById('resultPanel').classList.add('active');
+        drawBeam(L, bw, h, pTotal, Md, barDesc, cover, layers, barDiamCm, dentH, dentL);
+
+        document.getElementById('designTable').innerHTML = `
+            <tr><td>Momento Md</td><td class="highlight">${Md.toFixed(2)} kN.m</td></tr>
+            <tr><td>KMD / KMDlim</td><td>${KMD.toFixed(3)} / ${KMDlim.toFixed(3)}</td></tr>
+            <tr><td>As necessária / mín</td><td class="highlight">${AsFinal.toFixed(2)} cm² / ${AsMin.toFixed(2)} cm²</td></tr>
+            <tr><td>Barras adotadas</td><td><strong>${barDesc}</strong></td></tr>
+            <tr><td>Largura útil / máx. por camada</td><td>${(bw - 2*cover - 2*stirrupDiamCm).toFixed(1)} cm / ${arrangement.maxPerLayer} barras</td></tr>
+            <tr><td>Armadura superior</td><td>${topBars}</td></tr>
+            <tr><td>Vsd / Vc</td><td>${Vsd.toFixed(2)} kN / ${Vc.toFixed(2)} kN</td></tr>
+            <tr><td>Estribos</td><td>${stirrupText}</td></tr>
+            <tr><td>Consolo (tirante)</td><td>3 Ø 10.0 mm</td></tr>
+        `;
+
+        document.getElementById('deflectionTable').innerHTML = `
+            <tr><td>Momento serviço (g+ψ₂q)</td><td>${(M_servico/100).toFixed(2)} kN.m</td></tr>
+            <tr><td>Mr (fissuração)</td><td>${(Mr/100).toFixed(2)} kN.m</td></tr>
+            <tr><td>Estádio</td><td>${M_servico > Mr ? 'II (fissurado)' : 'I (não fissurado)'}</td></tr>
+            <tr><td>I<sub>eq</sub></td><td>${I_eq.toFixed(0)} cm⁴</td></tr>
+            <tr><td>Flecha imediata</td><td class="highlight">${f_imediata.toFixed(3)} cm (${(f_imediata*10).toFixed(2)} mm)</td></tr>
+            <tr><td>Flecha diferida (αf=${alpha_f.toFixed(2)})</td><td class="highlight">${f_diferida.toFixed(3)} cm</td></tr>
+            <tr><td>Flecha total (quase permanente)</td><td class="highlight"><strong>${f_total.toFixed(3)} cm (${(f_total*10).toFixed(1)} mm)</strong></td></tr>
+            <tr><td>Flecha carga total (g+q)</td><td>${f_total_carga.toFixed(3)} cm</td></tr>
+            <tr><td>Flecha acidental (q)</td><td>${f_acidental.toFixed(3)} cm</td></tr>
+            <tr><td>Limite L/250 (total)</td><td class="${f_total_carga <= limite_total ? 'limit-ok' : 'limit-fail'}">${limite_total.toFixed(2)} cm ${f_total_carga <= limite_total ? '✅ OK' : '❌ Excedido'}</td></tr>
+            <tr><td>Limite L/350 (acidental)</td><td class="${f_acidental <= limite_acidental ? 'limit-ok' : 'limit-fail'}">${limite_acidental.toFixed(2)} cm ${f_acidental <= limite_acidental ? '✅ OK' : '❌ Excedido'}</td></tr>
+        `;
+
+        document.getElementById('stabilityTable').innerHTML = `
+            <tr><td>ℓ₀ (tipologia)</td><td class="highlight">${l0.toFixed(2)} m</td></tr>
+            <tr><td>ℓ₀ / h</td><td>${l0h.toFixed(2)}</td></tr>
+            <tr><td>β<sub>fl</sub> obtido</td><td class="highlight">${beta_fl.toFixed(3)}</td></tr>
+            <tr><td>b ≥ ℓ₀/50</td><td class="${cond1?'limit-ok':'limit-fail'}">${bw} ≥ ${(l0_cm/50).toFixed(1)} cm ${cond1?'✅':'❌'}</td></tr>
+            <tr><td>b ≥ β<sub>fl</sub>·h</td><td class="${cond2?'limit-ok':'limit-fail'}">${bw} ≥ ${(beta_fl*h).toFixed(1)} cm ${cond2?'✅':'❌'}</td></tr>
+            <tr><td>Resultado</td><td class="${estabilidade_ok?'limit-ok':'limit-fail'}"><strong>${estabilidade_ok?'✅ Estável':'❌ Instável'}</strong></td></tr>
+        `;
+
+        document.getElementById('materialTable').innerHTML = `
+            <tr><th>Material</th><th>Especificação</th><th>Quantidade</th></tr>
+            <tr><td>Concreto C${fck}</td><td>Volume</td><td class="highlight">${concreteVolume.toFixed(2)} m³</td></tr>
+            <tr><td>Aço CA-50 (longitudinal inf.)</td><td>${barDesc}</td><td class="highlight">${longSteelKg.toFixed(1)} kg</td></tr>
+            <tr><td>Aço CA-50 (superior)</td><td>${topBars}</td><td class="highlight">${topSteelKg.toFixed(1)} kg</td></tr>
+            <tr><td>Aço CA-60 (estribos)</td><td>Ø 6.3 mm</td><td class="highlight">${stirrupKg.toFixed(1)} kg</td></tr>
+            <tr><td>Fôrma (fundo + laterais)</td><td>Chapa plastificada</td><td class="highlight">${formworkArea.toFixed(1)} m²</td></tr>
+            <tr><td>Espaçadores plásticos</td><td>cobr. ${cover} cm</td><td class="highlight">~18 unid.</td></tr>
+            <tr><td>Neoprene</td><td>15×15×1,0 cm</td><td class="highlight">1 unid.</td></tr>
+        `;
+
+        document.getElementById('executionList').innerHTML = `
+            <li><strong>Dente Gerber:</strong> Altura ${dentH} cm, comprimento ${dentL} cm, face inferior esquerda.</li>
+            <li><strong>Consolo:</strong> Apoia o dente por baixo, com neoprene de 1 cm.</li>
+            <li><strong>Fôrma:</strong> Madeira plastificada, travada a cada 1,0 m.</li>
+            <li><strong>Armadura longitudinal:</strong> ${barDesc}. Espaçamento horizontal mínimo ${arrangement.ahMin.toFixed(1)} cm, vertical ${arrangement.avMin.toFixed(1)} cm.</li>
+            <li><strong>Cobrimento:</strong> ${cover} cm com espaçadores.</li>
+            <li><strong>Cura:</strong> Úmida 7 dias.</li>
+            <li><strong>Estabilidade lateral:</strong> ${estabilidade_ok?'Atendida.':'Não atendida. Aumente bw ou reduza ℓ₀.'}</li>
+        `;
+    }
+
+    document.getElementById('calculateBtn').addEventListener('click', updateResults);
+    window.addEventListener('DOMContentLoaded', updateResults);
+</script>
+</body>
+</html>
