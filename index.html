@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>Viga Gerber • Dente Inferior • NBR 6118:2023</title>
+    <title>Viga Gerber • Memorial • NBR 6118:2023</title>
     <style>
         * {
             margin: 0;
@@ -87,6 +87,11 @@
             border-color: #0f3b5c;
             box-shadow: 0 0 0 3px rgba(15,59,92,0.1);
         }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
         button {
             background: #0f3b5c;
             color: white;
@@ -103,10 +108,15 @@
             transition: 0.2s;
             letter-spacing: 0.3px;
             box-shadow: 0 8px 18px rgba(15,59,92,0.25);
-            width: 100%;
+            flex: 1 1 auto;
         }
         button:hover { background: #123f5e; }
         button:active { transform: scale(0.98); }
+        .btn-print {
+            background: #1a6b3c;
+            box-shadow: 0 8px 18px rgba(26,107,60,0.25);
+        }
+        .btn-print:hover { background: #145a30; }
         .results {
             background: #ffffff;
             border-radius: 20px;
@@ -167,6 +177,53 @@
         .note { font-size: 0.8rem; color: #5c6b7e; margin-top: 8px; }
         .beta-table { font-size: 0.75rem; width: auto; margin-top: 8px; }
         .beta-table td { padding: 4px 10px; }
+
+        /* Estilos para impressão */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                max-width: 100%;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 15px;
+            }
+            .card, .btn-group, .note {
+                display: none;
+            }
+            .results {
+                display: flex !important;
+                border: none;
+                padding: 0;
+                gap: 12px;
+            }
+            canvas {
+                max-width: 100%;
+                height: auto;
+                page-break-inside: avoid;
+            }
+            .execution-list li {
+                background: #fafafa;
+                border-left: 3px solid #333;
+            }
+            h1 {
+                font-size: 1.4rem;
+                border-bottom: 2px solid #ccc;
+                margin-bottom: 10px;
+            }
+            table {
+                font-size: 0.8rem;
+            }
+            th, td {
+                padding: 4px;
+            }
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
     </style>
 </head>
 <body>
@@ -249,9 +306,14 @@
                 </select>
             </div>
         </div>
-        <button id="calculateBtn">
-            <span>🔍</span> Calcular e Exibir Relatório
-        </button>
+        <div class="btn-group" style="margin-top: 16px;">
+            <button id="calculateBtn">
+                <span>🔍</span> Calcular e Exibir Relatório
+            </button>
+            <button id="printBtn" class="btn-print" disabled>
+                <span>🖨️</span> Imprimir / PDF
+            </button>
+        </div>
         <div class="note">ⓘ Verifica espaçamento mínimo e redistribui barras se necessário.</div>
     </div>
 
@@ -326,7 +388,7 @@
     // Verificação de espaçamento e distribuição em camadas (NBR 6118 item 18.3.2.2)
     function getBarArrangement(totalBars, barDiamCm, bw, cover, stirrupDiamCm, dmaxMm) {
         const dmaxCm = dmaxMm / 10;
-        const ahMin = Math.max(2.3, barDiamCm, 1.2 * dmaxCm); // em cm (considerando brita 1 com 19mm -> 2.28 ≈ 2.3)
+        const ahMin = Math.max(2.3, barDiamCm, 1.2 * dmaxCm);
         const avMin = Math.max(2.0, barDiamCm, 0.5 * ahMin);
         const usefulWidth = bw - 2 * cover - 2 * stirrupDiamCm;
         const maxBarsPerLayer = Math.floor((usefulWidth + ahMin) / (barDiamCm + ahMin));
@@ -500,6 +562,9 @@
         ctx.fillText(barDesc, secX, secY+secH+15);
     }
 
+    // Variáveis globais para armazenar dados do memorial
+    let memorialData = {};
+
     function updateResults() {
         const L = parseFloat(document.getElementById('span').value) || 5.0;
         const bw = parseFloat(document.getElementById('bw').value) || 20;
@@ -547,7 +612,7 @@
         else { barQty = 4; barDiameterMm = 16.0; }
 
         const barDiamCm = barDiameterMm / 10;
-        const stirrupDiamCm = 0.63; // 6.3 mm
+        const stirrupDiamCm = 0.63;
 
         const arrangement = getBarArrangement(barQty, barDiamCm, bw, cover, stirrupDiamCm, dmax);
         const barDesc = arrangement.desc;
@@ -622,7 +687,20 @@
         const cond2 = bw >= beta_fl * h;
         const estabilidade_ok = cond1 && cond2;
 
+        // Armazenar dados para o memorial de impressão
+        memorialData = {
+            L, bw, h, fck, g, q, cover, dentH, dentL, dmax, pTotal,
+            l0, l0_cm, l0h, barDesc, arrangement, barDiamCm, layers,
+            Md, Vsd, KMD, KMDlim, AsFinal, AsMin, barQty, barDiameterMm,
+            Vc, stirrupText, topBars, beamLength, longSteelKg, topSteelKg,
+            stirrupKg, concreteVolume, formworkArea,
+            M_servico, Mr, I_eq, f_imediata, alpha_f, f_diferida, f_total,
+            f_total_carga, f_acidental, limite_total, limite_acidental,
+            beta_fl, cond1, cond2, estabilidade_ok, stirrupDiamCm
+        };
+
         document.getElementById('resultPanel').classList.add('active');
+        document.getElementById('printBtn').disabled = false;
         drawBeam(L, bw, h, pTotal, Md, barDesc, cover, layers, barDiamCm, dentH, dentL);
 
         document.getElementById('designTable').innerHTML = `
@@ -682,7 +760,13 @@
         `;
     }
 
+    // Função de impressão / gerar PDF
+    function printMemorial() {
+        window.print();
+    }
+
     document.getElementById('calculateBtn').addEventListener('click', updateResults);
+    document.getElementById('printBtn').addEventListener('click', printMemorial);
     window.addEventListener('DOMContentLoaded', updateResults);
 </script>
 </body>
